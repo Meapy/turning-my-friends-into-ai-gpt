@@ -46,6 +46,13 @@ You can pass `--token`, `--guild`, and `--user` instead of using `.env`.
 - On re-run, the script fetches only messages after the saved message ID for each channel, so scraping resumes from where it left off.
 - To re-scan a channel from scratch, remove that channel's entry from the state file or delete the state file.
 
+New: per-channel output and concurrency
+- The scraper now writes messages into a `messages/` folder under the repository. Each channel gets its own `messages/<channel_id>.jsonl` file. This improves parallel writes and makes it easier to inspect per-channel data.
+- The scraper now writes messages into a `messages/` folder under the repository. Each channel gets its own per-channel file named after the channel: `messages/<channel-name>.jsonl`. If a name collision is detected the channel id is appended: `messages/<channel-name>-<channel-id>.jsonl`.
+ - The scraper now writes messages into a `messages/` folder under the repository. Each channel gets its own per-channel file named after the channel: `messages/<channel-name>.jsonl`. If a name collision is detected the channel id is appended: `messages/<channel-name>-<channel-id>.jsonl`.
+ - The checkpoint/state file is now stored in `messages/.scrape_state.json` by default to avoid cross-directory permission issues on Windows.
+- Use `--concurrency N` to control how many channels are scraped in parallel (default 3). Higher values speed up collection but increase the chance of hitting rate limits.
+
 ## Output format
 Each line in `messages.jsonl` is a JSON object with fields similar to:
 
