@@ -106,9 +106,6 @@ Add `.copilot-config.json` in the repo root with a short rule set that instructs
 - Event loop errors in notebooks: use `discord_scraper.py` (script). The notebook is not the canonical scraper.
 - If you get permission errors, verify bot intents and invite permissions.
 
-## License & ethics
-- Use this tool responsibly. Ensure you have permission to collect and use message data. Do not share private data without consent.
-
 ---
 
 _Last updated: 2025-11-15_
