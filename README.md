@@ -45,13 +45,19 @@ You can pass `--token`, `--guild`, and `--user` instead of using `.env`.
 - The scraper appends each collected message to the output JSONL and records the last processed message ID per channel in the state file (default `.scrape_state.json`).
 - On re-run, the script fetches only messages after the saved message ID for each channel, so scraping resumes from where it left off.
 - To re-scan a channel from scratch, remove that channel's entry from the state file or delete the state file.
+New: per-channel output, concurrency and reliability improvements
+- The scraper writes messages into a `messages/` folder under the repository. Each channel gets its own per-channel file named after the channel: `messages/<channel-name>.jsonl`. If a name collision is detected the channel id is appended: `messages/<channel-name>-<channel-id>.jsonl`.
+- The checkpoint/state file is stored by default at `messages/.scrape_state.json` (avoids cross-directory permission issues on Windows/OneDrive).
+- Use `--concurrency N` to control how many channels are scraped in parallel (default 3). Higher values increase throughput but also the chance of rate-limiting.
 
-New: per-channel output and concurrency
-- The scraper now writes messages into a `messages/` folder under the repository. Each channel gets its own `messages/<channel_id>.jsonl` file. This improves parallel writes and makes it easier to inspect per-channel data.
-- The scraper now writes messages into a `messages/` folder under the repository. Each channel gets its own per-channel file named after the channel: `messages/<channel-name>.jsonl`. If a name collision is detected the channel id is appended: `messages/<channel-name>-<channel-id>.jsonl`.
- - The scraper now writes messages into a `messages/` folder under the repository. Each channel gets its own per-channel file named after the channel: `messages/<channel-name>.jsonl`. If a name collision is detected the channel id is appended: `messages/<channel-name>-<channel-id>.jsonl`.
- - The checkpoint/state file is now stored in `messages/.scrape_state.json` by default to avoid cross-directory permission issues on Windows.
-- Use `--concurrency N` to control how many channels are scraped in parallel (default 3). Higher values speed up collection but increase the chance of hitting rate limits.
+Reliability & performance options (new):
+- Buffered, batched writes: messages are buffered and flushed in batches to reduce blocking disk I/O and improve throughput.
+- Optional async/file-speedups: if `aiofiles` and `ujson` are installed the scraper will use async file writes and faster JSON serialization; the script works correctly without them.
+- `--durable-state`: enable fsync when saving the state file (slower but safer). By default fsync is skipped for speed.
+- `--precount`: start an optional background precount that estimates how many target-user messages exist across channels; the reporter will show a percent-complete as the estimate updates. Precount is accurate but expensive (it scans history) — a sampling estimator is possible if you prefer a faster approximate percent.
+- Rate-limit resilience: the scraper detects 429 responses and retries with backoff. You may still see 429 warnings when Discord rate-limits the history endpoint; the code will wait and resume automatically.
+- Hardened state writes: `save_state()` uses a temp file + atomic replace with retries and exponential backoff to reduce transient Windows file-lock errors.
+- Graceful shutdown: pressing Ctrl+C will save current progress, flush buffers and close the client cleanly so runs can resume exactly where they left off.
 
 ## Output format
 Each line in `messages.jsonl` is a JSON object with fields similar to:
@@ -66,6 +72,8 @@ Each line in `messages.jsonl` is a JSON object with fields similar to:
 }
 
 The file is append-only; consider running a dedupe/compaction step before training.
+
+Note: when using per-channel mode the files live under `messages/` (one JSONL per channel); run a dedupe/merge step if you need a single training file.
 
 ## Permissions & Discord setup
 - In the Discord Developer Portal, enable the MESSAGE_CONTENT (privileged) intent for your bot.
@@ -107,5 +115,8 @@ Add `.copilot-config.json` in the repo root with a short rule set that instructs
 - If you get permission errors, verify bot intents and invite permissions.
 
 ---
+
+Changelog
+- 2025-11-15 — Added per-channel messages folder, buffered async writes, `--durable-state`, `--precount` (background precount with incremental percent), rate-limit backoff and retries, hardened `save_state()` with retries, and graceful Ctrl+C shutdown.
 
 _Last updated: 2025-11-15_
