@@ -1,0 +1,10 @@
+#!/bin/sh
+# Local pre-commit hook that runs the README check script
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+PYTHON="python"
+
+# Run the README checker
+"$PYTHON" "$PROJECT_ROOT/tools/check_readme.py" || exit 1
+
+# If the checker passed, allow commit
+exit 0
