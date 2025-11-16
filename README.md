@@ -102,10 +102,29 @@ After running that, the pre-commit hook will run automatically on `git commit`.
 
 If you prefer system-wide enforcement, integrate the checker with your CI pipeline.
 
+# Encryption of Saved Messages
+
+## RSA Key Details
+Use the RSA key that is saved for this version of data. This is to be updated in secure location after each message release (Currently using data from /example until data is scraped)
+
+
+## Encrypt
+Use /TMFAI/tools/encrypt_json.py to encrypt a list of messages (TODO: Specify a dir)
+- This saves an encrypted list to TMFAI/output/*.txt
+- This uses the key that is saved under TMFAI/tools/key/key.key
+
+## Decrypt
+Use /TMFAI/tools/decrypt_json.py to decrypt the set of messages
+- This uses the same key that was used for encryption
+
+
 ## Future improvements (suggested)
 - Add `dedupe_compact.py` to compact and dedupe `messages.jsonl` into a final training dataset.
 - Add tests for `load_state`/`save_state` and CLI behavior.
 - Add a GitHub Action to run linting / basic smoke tests on changes.
+- Encrypt/Decrypt
+  - Create automated and safe key storage which is updated on each data encryption, which will be fetched during decryption during application testing
+  - Update Encryption to use files from a specific dir once data is available.
 
 ## Copilot / automation guidance
 Add `.copilot-config.json` in the repo root with a short rule set that instructs assistants and automation to remind and enforce README updates when code changes are made. The file is included in the repository and should be respected by any automation integrated with Copilot that reads local config.

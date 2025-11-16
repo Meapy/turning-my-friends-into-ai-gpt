@@ -10,3 +10,5 @@ __pycache__/
 *.log
 *.sqlite3
 /messages
+/TMFAI/tools/key/
+/TMFAI/output/
