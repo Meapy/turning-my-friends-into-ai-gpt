@@ -137,5 +137,6 @@ Add `.copilot-config.json` in the repo root with a short rule set that instructs
 
 Changelog
 - 2025-11-15 — Added per-channel messages folder, buffered async writes, `--durable-state`, `--precount` (background precount with incremental percent), rate-limit backoff and retries, hardened `save_state()` with retries, and graceful Ctrl+C shutdown.
+- 2025-11-15 - Added encryption & decription mechanism so that messages can be saved in the repository.
 
 _Last updated: 2025-11-15_
