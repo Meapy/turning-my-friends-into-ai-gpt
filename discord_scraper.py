@@ -155,6 +155,7 @@ async def run_scraper(token, guild_id, target_user_id, out_path, state_path, che
         'total': 0,
         'per_channel': {},
         'start_time': None,
+    'active_channels': set(),
     }
 
     async def reporter():
@@ -166,11 +167,13 @@ async def run_scraper(token, guild_id, target_user_id, out_path, state_path, che
                 elapsed = max(1, int(asyncio.get_event_loop().time() - progress['start_time']))
             total = progress['total']
             m_per_min = (total / elapsed) * 60 if elapsed > 0 else 0
+            active = list(progress.get('active_channels') or [])[:5]
+            active_str = ','.join(active)
             if progress.get('total_estimate'):
                 pct = (total / max(1, progress['total_estimate'])) * 100
-                logging.info('Progress: total=%d messages (%.1f%%), rate=%.1f msg/min, channels=%d', total, pct, m_per_min, len(progress['per_channel']))
+                logging.info('Progress: total=%d messages (%.1f%%), rate=%.1f msg/min, channels=%d, active=%s', total, pct, m_per_min, len(progress['per_channel']), active_str)
             else:
-                logging.info('Progress: total=%d messages, rate=%.1f msg/min, channels=%d', total, m_per_min, len(progress['per_channel']))
+                logging.info('Progress: total=%d messages, rate=%.1f msg/min, channels=%d, active=%s', total, m_per_min, len(progress['per_channel']), active_str)
 
 
     @client.event
@@ -210,7 +213,7 @@ async def run_scraper(token, guild_id, target_user_id, out_path, state_path, che
                         logging.debug('Precount failed for channel %s', ch.id)
                 return c
 
-            tasks_pc = [asyncio.create_task(precount_channel(ch)) for ch in guild.text_channels]
+            tasks_pc = [asyncio.create_task(precount_channel(ch)) for ch in guild.text_channels if (ch.name or '').lower() != 'log']
 
             async def collect_pc():
                 nonlocal estimate
@@ -230,6 +233,11 @@ async def run_scraper(token, guild_id, target_user_id, out_path, state_path, che
         async def process_channel(channel):
             nonlocal count, state
             logging.info('Starting channel %s (%s)', channel.name, channel.id)
+            # register active channel for reporter
+            try:
+                progress['active_channels'].add(channel.name)
+            except Exception:
+                pass
             async with sem:
                 chan_id = str(channel.id)
                 last_id = state.get(chan_id)
@@ -396,11 +404,15 @@ async def run_scraper(token, guild_id, target_user_id, out_path, state_path, che
                     logging.exception('Skipping channel %s due to error', channel.name)
 
                 logging.info('Finished channel %s (%s): collected %d messages', channel.name, channel.id, progress['per_channel'].get(chan_id, 0))
+                try:
+                    progress['active_channels'].discard(channel.name)
+                except Exception:
+                    pass
 
         # create tasks for channels and a reporter
         progress['start_time'] = asyncio.get_event_loop().time()
         rep_task = asyncio.create_task(reporter())
-        tasks = [asyncio.create_task(process_channel(ch)) for ch in guild.text_channels]
+        tasks = [asyncio.create_task(process_channel(ch)) for ch in guild.text_channels if (ch.name or '').lower() != 'log']
         # run with bounded concurrency
         await asyncio.gather(*tasks)
         rep_task.cancel()
