@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Check that README.md was updated when code files changed in the commit.
-
+hi guys this is michal's easter egg contribute. 
 This script should be run during pre-commit. It inspects the staged files; if any code files
 (.py, .ipynb) are staged and README.md is not staged or unchanged, it fails.
 """
